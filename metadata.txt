@@ -1,0 +1,19 @@
+[general]
+name=Análise 3-30-300
+qgisMinimumVersion=3.34
+qgisMaximumVersion=3.99
+description=Análise espacial parametrizável da regra 3-30-300 aplicada à infraestrutura verde urbana.
+version=1.0.0
+author=Pítolas Armini B. da Silva
+email=arminipitolas@gmail.com
+about=Plugin independente para QGIS destinado à análise espacial parametrizável da regra 3-30-300. Avalia quantidade mínima de árvores no entorno dos lotes, percentual mínimo de cobertura arbórea por bairro e proximidade a parques e áreas verdes. O critério original de três árvores visíveis é representado, nesta implementação GIS, pela quantidade de árvores existentes em uma distância configurável do lote. Inclui saídas diagnósticas, resumo estatístico e simbologia automática.
+repository=https://github.com/pitolas/QGIS-330300
+homepage=https://github.com/pitolas/QGIS-330300
+tracker=https://github.com/pitolas/QGIS-330300/issues
+category=Vector
+tags=3-30-300,urban forestry,green infrastructure,trees,parks,urban planning,arborização,infraestrutura verde
+icon=icon.png
+experimental=False
+deprecated=False
+hasProcessingProvider=yes
+changelog=Versão 1.0.0: primeira versão pública estável; documentação, licença GPL-3.0-or-later, créditos metodológicos, simbologia automática e resumo estatístico.
