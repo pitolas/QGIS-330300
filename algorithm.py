@@ -11,6 +11,8 @@ from qgis.core import (
     QgsField,
     QgsFields,
     QgsGeometry,
+    QgsMessageLog,
+    Qgis,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -148,7 +150,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
             if not g.isGeosValid():
                 fixed=g.makeValid()
                 if fixed and not fixed.isEmpty(): g=fixed
-        except Exception: pass
+        except Exception as exc:
+            QgsMessageLog.logMessage(
+                "Falha não crítica ao validar/corrigir geometria: {}".format(exc),
+                "Análise 3-30-300",
+                level=Qgis.MessageLevel.Warning,
+            )
         return g
 
     def _transform_geom(self, geom, src_crs, dst_crs, context):
@@ -203,7 +210,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
                     if bg.intersects(cg):
                         inter=bg.intersection(cg)
                         if inter and not inter.isEmpty(): parts.append(inter)
-                except Exception: continue
+                except Exception as exc:
+                    QgsMessageLog.logMessage(
+                        "Falha não crítica ao intersectar cobertura e bairro: {}".format(exc),
+                        "Análise 3-30-300",
+                        level=Qgis.MessageLevel.Warning,
+                    )
             if parts:
                 try:
                     union=QgsGeometry.unaryUnion(parts); area_copa=union.area() if union and not union.isEmpty() else 0.0
@@ -225,7 +237,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
         for fid in candidates:
             try:
                 if bairro_results[fid]['geom'].contains(centroid): return bairro_results[fid]
-            except Exception: pass
+            except Exception as exc:
+                QgsMessageLog.logMessage(
+                    "Falha não crítica no teste de contenção do lote no bairro: {}".format(exc),
+                    "Análise 3-30-300",
+                    level=Qgis.MessageLevel.Warning,
+                )
         best=None; best_area=-1.0
         for fid in candidates:
             bg=bairro_results[fid]['geom']
@@ -233,7 +250,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
                 if not bg.intersects(lot_geom): continue
                 a=bg.intersection(lot_geom).area()
                 if a>best_area: best_area=a; best=bairro_results[fid]
-            except Exception: continue
+            except Exception as exc:
+                QgsMessageLog.logMessage(
+                    "Falha não crítica ao calcular a interseção lote/bairro: {}".format(exc),
+                    "Análise 3-30-300",
+                    level=Qgis.MessageLevel.Warning,
+                )
         return best
 
     def _register_post_processor(self,context,dest_id,processor):
@@ -253,7 +275,7 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
         min_arvores=self.parameterAsInt(parameters,self.MIN_ARVORES,context); dist_arvores=self.parameterAsDouble(parameters,self.DIST_ARVORES,context); dist_verde=self.parameterAsDouble(parameters,self.DIST_VERDE,context); min_cobertura=self.parameterAsDouble(parameters,self.MIN_COBERTURA,context)
         work_crs=lotes.sourceCrs()
         if work_crs.isGeographic(): raise QgsProcessingException('A camada de lotes está em CRS geográfico. Use um CRS projetado em metros.')
-        feedback.pushInfo('=== ANÁLISE 3-30-300 — v0.2.0 ===')
+        feedback.pushInfo('=== ANÁLISE 3-30-300 — v1.0.1 ===')
         feedback.pushInfo('Parâmetros: mínimo {} árvore(s); raio árvores {:.2f} m; cobertura mínima {:.2f}%; distância máxima área verde {:.2f} m.'.format(min_arvores,dist_arvores,min_cobertura,dist_verde))
         tree_index,tree_geoms=self._index_from_layers(arvores,work_crs,context,feedback)
         green_layers=list(areas_verdes); green_layers.extend(pracas if incluir_pracas else [])
@@ -289,7 +311,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
                 if tg is None: continue
                 try:
                     if g.distance(tg)<=dist_arvores: n_arvores+=1
-                except Exception: continue
+                except Exception as exc:
+                    QgsMessageLog.logMessage(
+                        "Falha não crítica ao calcular distância lote/árvore: {}".format(exc),
+                        "Análise 3-30-300",
+                        level=Qgis.MessageLevel.Warning,
+                    )
             bg=g.boundingBox(); bg.grow(dist_verde); min_dist=None
             for gid in green_index.intersects(bg):
                 gg=green_geoms.get(gid)
@@ -297,7 +324,12 @@ class Analise330300Algorithm(QgsProcessingAlgorithm):
                 try:
                     d=g.distance(gg)
                     if min_dist is None or d<min_dist: min_dist=d
-                except Exception: continue
+                except Exception as exc:
+                    QgsMessageLog.logMessage(
+                        "Falha não crítica ao calcular distância lote/área verde: {}".format(exc),
+                        "Análise 3-30-300",
+                        level=Qgis.MessageLevel.Warning,
+                    )
             bairro=self._bairro_for_lot(g,bairro_results,bairro_index); bairro_nome=bairro['nome'] if bairro else ''; perc_copa=bairro['perc_copa'] if bairro else 0.0
             ok_arv=1 if n_arvores>=min_arvores else 0; ok_copa=1 if perc_copa>=min_cobertura else 0; ok_verde=1 if (min_dist is not None and min_dist<=dist_verde) else 0; ncrit=ok_arv+ok_copa+ok_verde; atende=1 if ncrit==3 else 0
             criteria_counts[ncrit]+=1

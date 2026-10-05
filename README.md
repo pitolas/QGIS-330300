@@ -109,3 +109,10 @@ Este software é distribuído sob a licença **GNU General Public License v3.0 o
 ## English summary
 
 **3-30-300 Analysis for QGIS** is a configurable urban green infrastructure analysis plugin. It evaluates tree presence around parcels, neighborhood canopy coverage, and proximity to parks/green spaces. The original “3 visible trees” criterion is operationalized as a configurable count of mapped trees around each parcel.
+
+
+## v1.0.1 — Security hardening
+
+This release resolves the six Bandit findings reported by the official QGIS
+Plugin Repository. Non-fatal geometry-processing exceptions are now logged
+instead of being silently ignored. The analysis methodology is unchanged.
